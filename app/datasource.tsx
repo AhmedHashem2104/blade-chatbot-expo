@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { router } from "expo-router";
 import axios from "axios";
+import { api_url } from "@/constants/urls";
 
 const AddTextSource = ({ onSubmit, loading }: any) => {
   const [text, setText] = useState("");
@@ -82,12 +83,9 @@ const AddDataSource = () => {
     if (!loading) {
       setLoading(true);
       try {
-        await axios.post(
-          "https://0317-102-186-68-167.ngrok-free.app/addSource",
-          {
-            content: source.data,
-          }
-        );
+        await axios.post(`${api_url}/addSource`, {
+          content: source.data,
+        });
         console.log("Submitted Data Source:", source);
         Alert.alert("Success", "Data source submitted successfully!");
       } catch (error) {

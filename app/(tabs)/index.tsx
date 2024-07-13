@@ -12,11 +12,14 @@ import { router } from "expo-router";
 import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { api_url } from "@/constants/urls";
 
 interface Message {
   message: string;
   id: number | string;
   isUserMessage: boolean;
+  source?: string;
+  readMore?: boolean;
 }
 [];
 
@@ -39,16 +42,21 @@ const index = () => {
       setMessage("");
 
       try {
-        const response = await axios.post(
-          "https://0317-102-186-68-167.ngrok-free.app/ask",
-          {
+        const response = await axios
+          .post(`${api_url}/ask`, {
             message: newMessage.message,
-          }
-        );
+          })
+          .then((res) => res)
+          .catch((err) => {
+            console.log(err.response.data);
+            return err;
+          });
 
         const aiMessage = {
           id: (messages.length + 2).toString(),
           message: response.data.text,
+          source: response.data.sourceDocuments[0].pageContent,
+          readMore: false,
           isUserMessage: false,
         };
         setMessages((prevMessages) => [aiMessage, ...prevMessages]);
@@ -58,6 +66,14 @@ const index = () => {
         setIsLoading(false);
       }
     }
+  };
+
+  const toggleReadMore = (id: number | string) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === id ? { ...msg, readMore: !msg.readMore } : msg
+      )
+    );
   };
 
   useEffect(() => {
@@ -83,9 +99,28 @@ const index = () => {
             </Text>
           </View>
 
-          <TouchableOpacity onPress={() => router.navigate("/settings")}>
-            <Ionicons name="settings" size={24} color="#333" />
-          </TouchableOpacity>
+          <View className="flex-row gap-3 items-center">
+            <TouchableOpacity
+              onPress={() => {
+                setMessages([]);
+                setMessage("");
+              }}
+              disabled={isLoading}
+            >
+              <Ionicons
+                name="reload"
+                size={24}
+                color="#333"
+                style={{
+                  opacity: isLoading ? 0.5 : 1,
+                }}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => router.navigate("/settings")}>
+              <Ionicons name="settings" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
         </View>
         <View className="flex-1 px-3">
           <FlatList
@@ -95,21 +130,33 @@ const index = () => {
             data={messages}
             keyExtractor={(item: any) => item?.id}
             renderItem={({ item }) => (
-              <View
+              <TouchableOpacity
                 className={`p-3 rounded-lg my-2 max-w-3/4 ${
                   item?.isUserMessage
                     ? "bg-blue-600 self-end ml-16"
                     : "bg-gray-300 self-start"
                 }`}
+                onPress={() => toggleReadMore(item.id)}
               >
                 <Text
-                  className={`text-base ${
+                  className={`text-lg ${
                     item?.isUserMessage ? "text-white" : "text-black"
                   }`}
                 >
                   {item?.message}
                 </Text>
-              </View>
+                {!item.isUserMessage ? (
+                  item.readMore ? (
+                    <Text className={`text-sm text-slate-700`}>
+                      Source: {item?.source}
+                    </Text>
+                  ) : (
+                    <Text className={`text-sm text-blue-700`}>Read more</Text>
+                  )
+                ) : (
+                  <></>
+                )}
+              </TouchableOpacity>
             )}
           />
           {isLoading && (
