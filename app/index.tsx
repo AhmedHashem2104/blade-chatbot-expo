@@ -181,9 +181,9 @@ const index = () => {
           <TouchableOpacity
             onPress={sendMessage}
             disabled={!message || isLoading} // Disable button when no message or loading
-            className={`ml-3 ${!message || isLoading ? "opacity-50" : ""}`}
+            className={`ml-3 mr-1 ${!message || isLoading ? "opacity-50" : ""}`}
           >
-            <Ionicons name="send" size={28} color="#007AFF" />
+            <Ionicons name="send" size={24} color="#007AFF" />
           </TouchableOpacity>
         </View>
       </View>

@@ -7,9 +7,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { router } from "expo-router";
 import axios from "axios";
 import { api_url } from "@/constants/urls";
 
@@ -55,11 +53,24 @@ const AddTextSource = ({ onSubmit, loading }: any) => {
 const AddFileSource = ({ onSubmit }: any) => {
   const handlePickDocument = async () => {
     let result: any = await DocumentPicker.getDocumentAsync({
-      type: ["text/plain", "application/pdf"],
+      type: [
+        "text/plain",
+        "application/pdf",
+        "text/csv",
+        "application/json",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
     });
-
-    if (result.type === "success") {
-      onSubmit({ type: "file", data: result.uri });
+    console.log(result);
+    if (result.assets[0].size < 1000000) {
+      onSubmit({
+        type: "file",
+        data: result.assets[0].uri,
+        fileType: result.assets[0].mimeType,
+      });
+    } else {
+      console.log(`Over size with ${result.assets[0].size}`);
     }
   };
 
@@ -80,12 +91,37 @@ const AddDataSource = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (source: any) => {
+    console.log(source, "source");
     if (!loading) {
       setLoading(true);
       try {
-        await axios.post(`${api_url}/addSource`, {
-          content: source.data,
-        });
+        if (source.type === "file") {
+          const formData: any = new FormData();
+          formData.append("file", {
+            uri: source.data,
+            name: `upload.${source.fileType.split("/")[1]}`,
+            type: source.fileType,
+          });
+
+          formData.append("type", "file");
+
+          formData.append("fileType", source.fileType);
+
+          await axios
+            .post(`${api_url}/addSource`, formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            })
+            .catch(() => {});
+        } else {
+          await axios
+            .post(`${api_url}/addSource`, {
+              content: source.data,
+              type: source.type,
+            })
+            .catch(() => {});
+        }
         console.log("Submitted Data Source:", source);
         Alert.alert("Success", "Data source submitted successfully!");
       } catch (error) {
